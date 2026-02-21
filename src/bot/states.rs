@@ -11,6 +11,12 @@ pub type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 pub enum Command {
     #[command(description = "Запуск бота")]
     Start,
+    #[command(description = "Смена времени напоминания")]
+    ChangeRemindTime,
+    #[command(description = "Смена даты рождения")]
+    ChangeBirthdate,
+    #[command(description = "Деактивация бота")]
+    DeactivateBot,
 }
 #[derive(Clone, Default)]
 pub enum State {
@@ -20,8 +26,6 @@ pub enum State {
     ReceiveSendTime {
         birthday: NaiveDate,
     },
-    ReceiveLocation {
-        full_name: String,
-        age: u8,
-    },
+    UpdateRemindTime,
+    UpdateBirthdate,
 }

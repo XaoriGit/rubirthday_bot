@@ -1,14 +1,13 @@
-use std::str::FromStr;
 use chrono::{NaiveDate, NaiveTime};
 use sqlx::{FromRow, SqlitePool};
+use std::str::FromStr;
 use std::sync::OnceLock;
 
 fn database_url() -> &'static str {
     static DATABASE_URL: OnceLock<String> = OnceLock::new();
 
     DATABASE_URL.get_or_init(|| {
-        std::env::var("DATABASE_URL")
-            .unwrap_or_else(|_| "sqlite:./db.sqlite".to_string())
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./db.sqlite".to_string())
     })
 }
 
@@ -23,8 +22,7 @@ pub struct Birthday {
 pub async fn init_db() -> sqlx::Result<SqlitePool> {
     let url = database_url();
 
-    let options = sqlx::sqlite::SqliteConnectOptions::from_str(url)?
-        .create_if_missing(true);
+    let options = sqlx::sqlite::SqliteConnectOptions::from_str(url)?.create_if_missing(true);
 
     let pool = SqlitePool::connect_with(options).await?;
 
@@ -37,7 +35,7 @@ pub async fn init_db() -> sqlx::Result<SqlitePool> {
         .run(&pool)
         .await?;
 
-    println!("База данных готова (или уже была)");
+    log::info!("База данных готова");
 
     Ok(pool)
 }
@@ -67,23 +65,14 @@ pub async fn create_or_update_birthday(
     Ok(())
 }
 
-pub async fn get_birthday(pool: &SqlitePool, chat_id: i64) -> sqlx::Result<Option<Birthday>> {
-    sqlx::query_as!(
-        Birthday,
-        r#"
-        SELECT chat_id, birthdate AS "birthdate: NaiveDate", remind_time AS "remind_time: NaiveTime", active
-        FROM birthdays
-        WHERE chat_id = ? AND active = true
-        "#,
-        chat_id
-    )
-        .fetch_optional(pool)
-        .await
-}
-
-pub async fn deactivate_birthday(pool: &SqlitePool, chat_id: i64) -> sqlx::Result<()> {
+pub async fn update_birthday(
+    pool: &SqlitePool,
+    chat_id: i64,
+    new_birthdate: NaiveDate,
+) -> sqlx::Result<()> {
     sqlx::query!(
-        "UPDATE birthdays SET active = false WHERE chat_id = ?",
+        "UPDATE birthdays SET birthdate = ? WHERE chat_id = ?",
+        new_birthdate,
         chat_id
     )
     .execute(pool)
@@ -91,9 +80,49 @@ pub async fn deactivate_birthday(pool: &SqlitePool, chat_id: i64) -> sqlx::Resul
     Ok(())
 }
 
+pub async fn update_remind_time(
+    pool: &SqlitePool,
+    chat_id: i64,
+    new_remind_time: NaiveTime,
+) -> sqlx::Result<()> {
+    sqlx::query!(
+        "UPDATE birthdays SET remind_time = ? WHERE chat_id = ?",
+        new_remind_time,
+        chat_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn update_active(pool: &SqlitePool, chat_id: i64, new_active: bool) -> sqlx::Result<()> {
+    sqlx::query!(
+        "UPDATE birthdays SET active = ? WHERE chat_id = ?",
+        new_active,
+        chat_id
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn get_birthday(pool: &SqlitePool, chat_id: i64) -> sqlx::Result<Option<Birthday>> {
+    sqlx::query_as!(
+        Birthday,
+        r#"
+        SELECT chat_id, birthdate AS "birthdate: NaiveDate", remind_time AS "remind_time: NaiveTime", active
+        FROM birthdays
+        WHERE chat_id = ?
+        "#,
+        chat_id
+    )
+        .fetch_optional(pool)
+        .await
+}
+
 pub async fn get_all_active_for_reminder(
     pool: &SqlitePool,
-    current_time_str: &str,
+    current_remind_time: &str,
 ) -> sqlx::Result<Vec<Birthday>> {
     sqlx::query_as!(
         Birthday,
@@ -102,7 +131,7 @@ pub async fn get_all_active_for_reminder(
         FROM birthdays
         WHERE active = true AND remind_time = ?
         "#,
-        current_time_str
+        current_remind_time
     )
         .fetch_all(pool)
         .await

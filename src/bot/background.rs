@@ -2,11 +2,10 @@ use crate::bot::common::make_birthday_message;
 use crate::db;
 use chrono::{Timelike};
 use sqlx::SqlitePool;
-use teloxide::adaptors::DefaultParseMode;
 use teloxide::prelude::*;
 use tokio::time::{Duration, sleep};
 
-pub async fn birthday_reminder_loop(bot: DefaultParseMode<Bot>, pool: SqlitePool) {
+pub async fn birthday_reminder_loop(bot: Bot, pool: SqlitePool) {
     loop {
         let now = chrono::Utc::now().with_timezone(&chrono_tz::Asia::Omsk);
 

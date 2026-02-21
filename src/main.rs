@@ -6,7 +6,6 @@ use dotenvy::dotenv;
 use teloxide::{
     dispatching::dialogue::InMemStorage, prelude::*
 };
-use teloxide::types::ParseMode;
 use teloxide::utils::command::BotCommands;
 use crate::bot::handlers::schema;
 use crate::bot::states::{Command, State};
@@ -23,7 +22,7 @@ async fn main() {
         .await
         .expect("Не удалось инициализировать базу данных");
 
-    let bot = Bot::from_env().parse_mode(ParseMode::MarkdownV2);
+    let bot = Bot::from_env();
 
     if let Err(e) = bot.set_my_commands(Command::bot_commands()).await {
         log::error!("Не удалось установить команды бота: {}", e);

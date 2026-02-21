@@ -6,7 +6,6 @@ use sqlx::SqlitePool;
 use teloxide::dispatching::UpdateHandler;
 use teloxide::types::{KeyboardButton, KeyboardMarkup, KeyboardRemove};
 use teloxide::{dispatching::dialogue::InMemStorage, filter_command, prelude::*};
-use teloxide::utils::markdown::bold;
 
 const TIMES: [&str; 24] = [
     "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00",
@@ -45,16 +44,21 @@ async fn cmd_start(
     match db::get_birthday(&pool, chat_id).await? {
         Some(birthday) => {
             if birthday.active.unwrap_or(false) {
-                let today = Utc::now().with_timezone(&chrono_tz::Asia::Omsk).date_naive();
+                let today = Utc::now()
+                    .with_timezone(&chrono_tz::Asia::Omsk)
+                    .date_naive();
 
-                bot.send_message(msg.chat.id, make_birthday_message(birthday.birthdate, today))
-                    .await?;
+                bot.send_message(
+                    msg.chat.id,
+                    make_birthday_message(birthday.birthdate, today),
+                )
+                .await?;
             } else {
                 bot.send_message(
                     msg.chat.id,
                     format!(
                         "Бот снова активирован для тебя! 🎈\nТвоя дата рождения: {}",
-                        bold(&*birthday.birthdate.format("%d.%m.%Y").to_string())
+                        birthday.birthdate.format("%d.%m.%Y").to_string()
                     ),
                 )
                 .await?;
@@ -154,7 +158,10 @@ async fn update_birthdate(
                     Ok(_) => {
                         bot.send_message(
                             msg.chat.id,
-                            format!("Твой новый день рождения {}", bold(&*datetime.format("%d.%m.%Y").to_string())),
+                            format!(
+                                "Твой новый день рождения {}",
+                                datetime.format("%d.%m.%Y").to_string()
+                            ),
                         )
                         .reply_markup(KeyboardRemove::default())
                         .await?;

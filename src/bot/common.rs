@@ -1,6 +1,5 @@
 use chrono::Datelike;
 use chrono::NaiveDate;
-use teloxide::utils::html::bold;
 
 pub fn make_birthday_message(birthday: NaiveDate, today: NaiveDate) -> String {
     let mut next_birthday = NaiveDate::from_ymd_opt(
@@ -19,6 +18,6 @@ pub fn make_birthday_message(birthday: NaiveDate, today: NaiveDate) -> String {
     if days_left == 0 {
         "🎉 С Днём рождения! 🎂🥳".to_string()
     } else {
-        format!("До твоего дня рождения осталось {} дней 🎈", bold(&*days_left.to_string()))
+        format!("До твоего дня рождения осталось {} дней 🎈", days_left.to_string())
     }
 }
